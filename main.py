@@ -14,28 +14,24 @@ args = parser.parse_args()
 
 input_image_path = f"./images/plate{args.index}.jpg"
 
-try:
-    preprocessed_image, original_image = imagePreprocessing(input_image_path)
-    cv2.imshow("Original image", original_image)
+preprocessed_image, original_image = imagePreprocessing(input_image_path)
+cv2.imshow("Original image", original_image)
 
-    buildCharacterDB(features,labels)
-    print(features)
-    print(labels)
-   
+buildCharacterDB(features,labels)
+print(features)
+print(labels)
 
 
-    #cv2.imshow("Preprocessed License Plate", preprocessed_image)
 
-    license_plate = plateDetection(preprocessed_image)
-    
-    if license_plate is not None:
-        cv2.imshow("Detected License Plate", license_plate)
-    else:
-        print("No license plate detected.")
-    
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-except ValueError as e:
-    print(str(e))
-except cv2.error as e:
-    print(f"Error loading image: {e}")
+#cv2.imshow("Preprocessed License Plate", preprocessed_image)
+
+license_plate = plateDetection(preprocessed_image, original_image)
+
+
+if license_plate is not None:
+    cv2.imshow("Detected License Plate", license_plate)
+else:
+    print("No license plate detected.")
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()
