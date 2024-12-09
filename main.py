@@ -3,6 +3,10 @@ import numpy as np
 import argparse
 from preProcessing import imagePreprocessing
 from plateDetection import plateDetection
+from buildDB import buildCharacterDB
+
+features =[]
+labels=[]
 
 parser = argparse.ArgumentParser()
 parser.add_argument("index", type=int)
@@ -13,6 +17,12 @@ input_image_path = f"./images/plate{args.index}.jpg"
 try:
     preprocessed_image, original_image = imagePreprocessing(input_image_path)
     cv2.imshow("Original image", original_image)
+
+    buildCharacterDB(features,labels)
+    print(features)
+    print(labels)
+   
+
 
     #cv2.imshow("Preprocessed License Plate", preprocessed_image)
 
