@@ -20,7 +20,8 @@ def predict_plate(plate):
     features = extract_hog_features(gray) 
     distances, _ = knn_model.kneighbors([features])
     # 1 <=threshold <= 2.95
-    if 1 <= distances[0][0] <= 2.95:
+    #print(distances[0][0])
+    if 1 <= distances[0][0] <= 3:
         return True
     else:
         return False
@@ -28,6 +29,7 @@ def predict_plate(plate):
 def getPlate(plates):
     plate_detected = None
     for plate in plates:
+        #cv2.imshow("plate", plate)
         if predict_plate(plate):  
             plate_detected = plate
             break
