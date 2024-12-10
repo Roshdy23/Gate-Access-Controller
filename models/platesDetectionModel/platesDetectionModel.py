@@ -38,7 +38,7 @@ def load_images_with_labels(directory_path, label):
 
     return np.array(data), np.array(labels)
 
-plate_directory = "./plates"
+plate_directory = "./egyplates"
 non_plate_directory = "./non-plates"
 
 plate_data, plate_labels = load_images_with_labels(plate_directory, label=1)
@@ -86,7 +86,7 @@ def predict_image(image_path):
     prediction = knn.predict([features])[0]
     return features, prediction
 
-test_image_path = './testImages/plate9.jpg'
+test_image_path = './testImages/test2.jpg'
 features, result = predict_image(test_image_path)
 
 pca_transformed_test_image = pca.transform([features])
