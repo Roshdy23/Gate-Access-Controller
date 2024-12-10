@@ -18,7 +18,9 @@ input_image_path = f"./images/plate{args.index}.jpg"
 preprocessed_image, original_image = imagePreprocessing(input_image_path)
 cv2.imshow("Original image", original_image)
 
+
 buildCharacterDB(features, labels)
+
 
 
 license_plate = plateDetection(preprocessed_image, original_image)

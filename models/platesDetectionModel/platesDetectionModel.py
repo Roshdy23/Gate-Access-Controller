@@ -5,60 +5,98 @@ from skimage.feature import hog
 from sklearn.neighbors import KNeighborsClassifier
 import matplotlib.pyplot as plt
 import joblib
+from sklearn.decomposition import PCA
+
 
 def extract_hog_features(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    features, _ = hog(gray, block_norm='L2-Hys', pixels_per_cell=(16, 16), cells_per_block=(2, 2), visualize=True)
+    features, _ = hog(
+        gray,
+        block_norm='L2-Hys',
+        pixels_per_cell=(16, 16),
+        cells_per_block=(2, 2),
+        visualize=True
+    )
     return features
 
-def load_plate_images(directory_path):
+def load_images_with_labels(directory_path, label):
     data = []
-    image_paths = [os.path.join(directory_path, filename) for filename in os.listdir(directory_path) if filename.endswith('.jpg') or filename.endswith('.png')]
-    
+    labels = []
+    image_paths = [
+        os.path.join(directory_path, filename)
+        for filename in os.listdir(directory_path)
+        if filename.endswith('.jpg') or filename.endswith('.png')
+    ]
+
     for img_path in image_paths:
         image = cv2.imread(img_path)
-        
         if image is not None:
-            image_resized = cv2.resize(image, (128, 64)) 
+            image_resized = cv2.resize(image, (128, 64))
             features = extract_hog_features(image_resized)
             data.append(features)
-    
-    return np.array(data)
+            labels.append(label)
 
-plate_directory = "./Training data for plate detection"
+    return np.array(data), np.array(labels)
 
-plate_data = load_plate_images(plate_directory)
+plate_directory = "./egyplates"
+non_plate_directory = "./non-plates"
 
-knn = KNeighborsClassifier(n_neighbors=5)
+plate_data, plate_labels = load_images_with_labels(plate_directory, label=1)
+non_plate_data, non_plate_labels = load_images_with_labels(non_plate_directory, label=0)
 
-knn.fit(plate_data, np.ones(len(plate_data)))
+data = np.vstack((plate_data, non_plate_data))
+labels = np.hstack((plate_labels, non_plate_labels))
+
+knn = KNeighborsClassifier(n_neighbors=2)
+knn.fit(data, labels)
 
 joblib.dump(knn, 'knn_model.pkl')
-print("KNN model saved as knn_model.pkl")
+print("KNN model trained and saved as knn_model.pkl")
 
-# new_image_path = './testImages/plate1.jpg'  
-# new_image = cv2.imread(new_image_path)
+pca = PCA(n_components=2)
+data_2d = pca.fit_transform(data)
 
-# new_image_resized = cv2.resize(new_image, (128, 64))
+x_min, x_max = data_2d[:, 0].min() - 1, data_2d[:, 0].max() + 1
+y_min, y_max = data_2d[:, 1].min() - 1, data_2d[:, 1].max() + 1
+xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.1),
+                     np.arange(y_min, y_max, 0.1))
 
-# new_features = extract_hog_features(new_image_resized)
+Z = knn.predict(pca.inverse_transform(np.c_[xx.ravel(), yy.ravel()]))
+Z = Z.reshape(xx.shape)
 
-# distances, _ = knn.kneighbors([new_features])
+plt.figure(figsize=(10, 8))
+plt.contourf(xx, yy, Z, alpha=0.8, cmap=plt.cm.coolwarm)
+plt.scatter(data_2d[:, 0], data_2d[:, 1], c=labels, edgecolor='k', cmap=plt.cm.coolwarm, s=50)
+plt.title("KNN Decision Regions for Plates and Non-Plates")
+plt.xlabel("PCA Feature 1")
+plt.ylabel("PCA Feature 2")
+plt.colorbar()
 
-# for each image in the training data according to its hog and the other images hog we calculate the distance to get how much its hog is far from other hogs, histogram represents how much a specific distance occured, so in a given interval if an image in this range then it has a high probabilty to be a plate
-all_distances, _ = knn.kneighbors(plate_data)
+def predict_image(image_path):
+    knn = joblib.load("knn_model.pkl")
+    
+    image = cv2.imread(image_path)
+    if image is None:
+        print("Error: Could not read the image.")
+        return None
 
-plt.hist(all_distances.flatten(), bins=30, color='blue', alpha=0.7)
-#plt.axvline(distances[0][0], color='red', linestyle='dashed', linewidth=2, label=f'Test image distance: {distances[0][0]:.2f}')
-plt.title("Distance Distribution of Training Data")
-plt.xlabel("Distance")
-plt.ylabel("Frequency")
+    image_resized = cv2.resize(image, (128, 64))
+    features = extract_hog_features(image_resized)
+    
+    prediction = knn.predict([features])[0]
+    return features, prediction
+
+test_image_path = './testImages/test2.jpg'
+features, result = predict_image(test_image_path)
+
+pca_transformed_test_image = pca.transform([features])
+
+plt.scatter(pca_transformed_test_image[0][0], pca_transformed_test_image[0][1], color='red', s=100, label="Test Image")
+
+if result == 1:
+    print("The image is a plate.")
+else:
+    print("The image is not a plate.")
+
 plt.legend()
 plt.show()
-
-# threshold = 2.9 
-
-# if distances[0][0] < threshold:
-#     print("The image is a plate.")
-# else:
-#     print("The image is not a plate.")
