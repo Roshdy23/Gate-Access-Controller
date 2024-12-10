@@ -4,9 +4,10 @@ import argparse
 from preProcessing import imagePreprocessing
 from plateDetection import plateDetection
 from buildDB import buildCharacterDB
+from segmentPlate import segment_plate
 
-features =[]
-labels=[]
+features = []
+labels = []
 
 parser = argparse.ArgumentParser()
 parser.add_argument("index", type=int)
@@ -17,18 +18,14 @@ input_image_path = f"./images/plate{args.index}.jpg"
 preprocessed_image, original_image = imagePreprocessing(input_image_path)
 cv2.imshow("Original image", original_image)
 
-buildCharacterDB(features,labels)
-print(features)
-print(labels)
+buildCharacterDB(features, labels)
 
-
-
-#cv2.imshow("Preprocessed License Plate", preprocessed_image)
 
 license_plate = plateDetection(preprocessed_image, original_image)
 
-
 if license_plate is not None:
+    chars = segment_plate(license_plate)
+
     cv2.imshow("Detected License Plate", license_plate)
 else:
     print("No license plate detected.")
