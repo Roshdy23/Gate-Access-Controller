@@ -18,19 +18,21 @@ def predict_plate(plate):
     plate_resized = cv2.resize(plate, (128, 64))  
     gray = cv2.cvtColor(plate_resized, cv2.COLOR_BGR2GRAY)
     features = extract_hog_features(gray) 
-    distances, _ = knn_model.kneighbors([features])
+    prediction = knn_model.predict([features])[0]
+    return prediction
+    #distances, _ = knn_model.kneighbors([features])
     # 1 <=threshold <= 2.95
     #print(distances[0][0])
-    if 1 <= distances[0][0] <= 3:
-        return True
-    else:
-        return False
+    # if 1 <= distances[0][0] <= 3:
+    #     return True
+    # else:
+    #     return False
 
 def getPlate(plates):
     plate_detected = None
     for plate in plates:
         #cv2.imshow("plate", plate)
-        if predict_plate(plate):  
+        if predict_plate(plate) == 1:  
             plate_detected = plate
             break
     return plate_detected
@@ -50,8 +52,10 @@ def plateDetection(preprocessed_image, original_image, area_threshold=2000):
         aspect_ratio = w / h
 
         if area > area_threshold and 2 < aspect_ratio < 6:
+            #cv2.imshow(f"plate {i}", dilated_edges[y:y+h, x:x+w])
             detected_plates.append(original_image[y:y+h, x:x+w])
     
     detected_plate = getPlate(detected_plates)
+    
 
     return detected_plate
