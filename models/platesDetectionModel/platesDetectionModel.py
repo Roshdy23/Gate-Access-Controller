@@ -5,6 +5,8 @@ from skimage.feature import hog
 from sklearn.neighbors import KNeighborsClassifier
 import matplotlib.pyplot as plt
 import joblib
+from sklearn.decomposition import PCA
+
 
 def extract_hog_features(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -45,34 +47,30 @@ non_plate_data, non_plate_labels = load_images_with_labels(non_plate_directory, 
 data = np.vstack((plate_data, non_plate_data))
 labels = np.hstack((plate_labels, non_plate_labels))
 
-knn = KNeighborsClassifier(n_neighbors=5)
+knn = KNeighborsClassifier(n_neighbors=2)
 knn.fit(data, labels)
 
 joblib.dump(knn, 'knn_model.pkl')
 print("KNN model trained and saved as knn_model.pkl")
 
-# Analyze distances
-# all_distances, _ = knn.kneighbors(data)
+pca = PCA(n_components=2)
+data_2d = pca.fit_transform(data)
 
-# plt.hist(all_distances.flatten(), bins=30, color='blue', alpha=0.7)
-# plt.title("Distance Distribution of Training Data")
-# plt.xlabel("Distance")
-# plt.ylabel("Frequency")
-# plt.show()
+x_min, x_max = data_2d[:, 0].min() - 1, data_2d[:, 0].max() + 1
+y_min, y_max = data_2d[:, 1].min() - 1, data_2d[:, 1].max() + 1
+xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.1),
+                     np.arange(y_min, y_max, 0.1))
 
-# Example Test Image
-# Uncomment and adjust paths to test the model
-# new_image_path = './testImages/test1.jpg'  
-# new_image = cv2.imread(new_image_path)
-# new_image_resized = cv2.resize(new_image, (128, 64))
-# new_features = extract_hog_features(new_image_resized)
-# distances, _ = knn.kneighbors([new_features])
-# threshold = 2.9
-# if distances[0][0] < threshold:
-#     print("The image is a plate.")
-# else:
-#     print("The image is not a plate.")
+Z = knn.predict(pca.inverse_transform(np.c_[xx.ravel(), yy.ravel()]))
+Z = Z.reshape(xx.shape)
 
+plt.figure(figsize=(10, 8))
+plt.contourf(xx, yy, Z, alpha=0.8, cmap=plt.cm.coolwarm)
+plt.scatter(data_2d[:, 0], data_2d[:, 1], c=labels, edgecolor='k', cmap=plt.cm.coolwarm, s=50)
+plt.title("KNN Decision Regions for Plates and Non-Plates")
+plt.xlabel("PCA Feature 1")
+plt.ylabel("PCA Feature 2")
+plt.colorbar()
 
 def predict_image(image_path):
     knn = joblib.load("knn_model.pkl")
@@ -86,13 +84,19 @@ def predict_image(image_path):
     features = extract_hog_features(image_resized)
     
     prediction = knn.predict([features])[0]
-    return prediction
+    return features, prediction
 
-test_image_path = './testImages/test2.jpg'  
-result = predict_image(test_image_path)
+test_image_path = './testImages/plate8.jpg'
+features, result = predict_image(test_image_path)
 
-if result is not None:
-    if result == 1:
-        print("The image is a plate.")
-    else:
-        print("The image is not a plate.")
+pca_transformed_test_image = pca.transform([features])
+
+plt.scatter(pca_transformed_test_image[0][0], pca_transformed_test_image[0][1], color='red', s=100, label="Test Image")
+
+if result == 1:
+    print("The image is a plate.")
+else:
+    print("The image is not a plate.")
+
+plt.legend()
+plt.show()
