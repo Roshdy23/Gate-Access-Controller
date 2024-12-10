@@ -36,23 +36,18 @@ def load_images_with_labels(directory_path, label):
 
     return np.array(data), np.array(labels)
 
-# Directories
 plate_directory = "./plates"
 non_plate_directory = "./non-plates"
 
-# Load data and labels
 plate_data, plate_labels = load_images_with_labels(plate_directory, label=1)
 non_plate_data, non_plate_labels = load_images_with_labels(non_plate_directory, label=0)
 
-# Combine plate and non-plate data
 data = np.vstack((plate_data, non_plate_data))
 labels = np.hstack((plate_labels, non_plate_labels))
 
-# Train KNN classifier
 knn = KNeighborsClassifier(n_neighbors=5)
 knn.fit(data, labels)
 
-# Save the model
 joblib.dump(knn, 'knn_model.pkl')
 print("KNN model trained and saved as knn_model.pkl")
 
@@ -93,7 +88,7 @@ def predict_image(image_path):
     prediction = knn.predict([features])[0]
     return prediction
 
-test_image_path = './testImages/plate1.jpg'  
+test_image_path = './testImages/test2.jpg'  
 result = predict_image(test_image_path)
 
 if result is not None:
