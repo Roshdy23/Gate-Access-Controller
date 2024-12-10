@@ -86,7 +86,7 @@ def predict_image(image_path):
     prediction = knn.predict([features])[0]
     return features, prediction
 
-test_image_path = './testImages/plate8.jpg'
+test_image_path = './testImages/plate9.jpg'
 features, result = predict_image(test_image_path)
 
 pca_transformed_test_image = pca.transform([features])
