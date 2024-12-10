@@ -80,25 +80,20 @@ print("KNN model trained and saved as knn_model.pkl")
 
 
 def predict_image(image_path):
-    # Load the trained KNN model
     knn = joblib.load("knn_model.pkl")
     
-    # Load the test image
     image = cv2.imread(image_path)
     if image is None:
         print("Error: Could not read the image.")
         return None
 
-    # Preprocess the image
     image_resized = cv2.resize(image, (128, 64))
     features = extract_hog_features(image_resized)
     
-    # Predict using the KNN model
     prediction = knn.predict([features])[0]
     return prediction
 
-# Test the prediction function
-test_image_path = './testImages/plate1.jpg'  # Replace with your test image path
+test_image_path = './testImages/plate1.jpg'  
 result = predict_image(test_image_path)
 
 if result is not None:
