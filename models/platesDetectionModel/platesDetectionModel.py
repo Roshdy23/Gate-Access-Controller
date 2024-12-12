@@ -1,22 +1,17 @@
 import os
 import cv2
 import numpy as np
-from skimage.feature import hog
-from sklearn.neighbors import KNeighborsClassifier
-import matplotlib.pyplot as plt
 import joblib
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+from HOG import HOG
 
+hog = HOG()
 
 def extract_hog_features(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    features, _ = hog(
-        gray,
-        block_norm='L2-Hys',
-        pixels_per_cell=(16, 16),
-        cells_per_block=(2, 2),
-        visualize=True
-    )
+    features = hog.compute_hog_features(gray)
     return features
 
 def load_images_with_labels(directory_path, label):
@@ -47,33 +42,19 @@ non_plate_data, non_plate_labels = load_images_with_labels(non_plate_directory, 
 data = np.vstack((plate_data, non_plate_data))
 labels = np.hstack((plate_labels, non_plate_labels))
 
-knn = KNeighborsClassifier(n_neighbors=2)
-knn.fit(data, labels)
-
-joblib.dump(knn, 'knn_model.pkl')
-print("KNN model trained and saved as knn_model.pkl")
-
 pca = PCA(n_components=2)
 data_2d = pca.fit_transform(data)
 
-x_min, x_max = data_2d[:, 0].min() - 1, data_2d[:, 0].max() + 1
-y_min, y_max = data_2d[:, 1].min() - 1, data_2d[:, 1].max() + 1
-xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.1),
-                     np.arange(y_min, y_max, 0.1))
+knn = KNeighborsClassifier(n_neighbors=5)
+knn.fit(data_2d, labels)
 
-Z = knn.predict(pca.inverse_transform(np.c_[xx.ravel(), yy.ravel()]))
-Z = Z.reshape(xx.shape)
-
-plt.figure(figsize=(10, 8))
-plt.contourf(xx, yy, Z, alpha=0.8, cmap=plt.cm.coolwarm)
-plt.scatter(data_2d[:, 0], data_2d[:, 1], c=labels, edgecolor='k', cmap=plt.cm.coolwarm, s=50)
-plt.title("KNN Decision Regions for Plates and Non-Plates")
-plt.xlabel("PCA Feature 1")
-plt.ylabel("PCA Feature 2")
-plt.colorbar()
+joblib.dump(knn, 'knn_model.pkl')
+joblib.dump(pca, 'pca_model.pkl')
+print("KNN model and PCA model saved.")
 
 def predict_image(image_path):
     knn = joblib.load("knn_model.pkl")
+    pca = joblib.load("pca_model.pkl")
     
     image = cv2.imread(image_path)
     if image is None:
@@ -83,13 +64,27 @@ def predict_image(image_path):
     image_resized = cv2.resize(image, (128, 64))
     features = extract_hog_features(image_resized)
     
-    prediction = knn.predict([features])[0]
+    pca_transformed_features = pca.transform([features])
+    
+    prediction = knn.predict(pca_transformed_features)[0]
     return features, prediction
 
-test_image_path = './testImages/test2.jpg'
+test_image_path = './testImages/plate_0.jpg'
 features, result = predict_image(test_image_path)
 
 pca_transformed_test_image = pca.transform([features])
+
+plt.figure(figsize=(10, 8))
+
+x_min, x_max = data_2d[:, 0].min() - 1, data_2d[:, 0].max() + 1
+y_min, y_max = data_2d[:, 1].min() - 1, data_2d[:, 1].max() + 1
+xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.1), np.arange(y_min, y_max, 0.1))
+Z = knn.predict(np.c_[xx.ravel(), yy.ravel()])  
+Z = Z.reshape(xx.shape)
+plt.contourf(xx, yy, Z, alpha=0.8, cmap=plt.cm.coolwarm)
+
+colors = ['blue' if label == 0 else 'red' for label in labels]
+plt.scatter(data_2d[:, 0], data_2d[:, 1], c=colors, edgecolor='k', s=50)
 
 plt.scatter(pca_transformed_test_image[0][0], pca_transformed_test_image[0][1], color='red', s=100, label="Test Image")
 
@@ -98,5 +93,9 @@ if result == 1:
 else:
     print("The image is not a plate.")
 
+plt.title("KNN Decision Regions for Plates and Non-Plates")
+plt.xlabel("PCA Feature 1")
+plt.ylabel("PCA Feature 2")
+plt.colorbar()
 plt.legend()
 plt.show()

@@ -19,7 +19,7 @@ preprocessed_image, original_image = imagePreprocessing(input_image_path)
 cv2.imshow("Original image", original_image)
 
 
-buildCharacterDB(features, labels)
+#buildCharacterDB(features, labels)
 
 
 
