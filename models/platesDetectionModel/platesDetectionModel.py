@@ -4,10 +4,11 @@ import numpy as np
 import joblib
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import PCA
+from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
-from HOG import HOG
+from HOG2 import HOG2
 
-hog = HOG()
+hog = HOG2()
 
 def extract_hog_features(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -52,27 +53,36 @@ joblib.dump(knn, 'knn_model.pkl')
 joblib.dump(pca, 'pca_model.pkl')
 print("KNN model and PCA model saved.")
 
-def predict_image(image_path):
-    knn = joblib.load("knn_model.pkl")
-    pca = joblib.load("pca_model.pkl")
+# def predict_image(image_path):
+#     knn = joblib.load("knn_model.pkl")
+#     pca = joblib.load("pca_model.pkl")
     
-    image = cv2.imread(image_path)
-    if image is None:
-        print("Error: Could not read the image.")
-        return None
+#     image = cv2.imread(image_path)
+#     if image is None:
+#         print("Error: Could not read the image.")
+#         return None
 
-    image_resized = cv2.resize(image, (128, 64))
-    features = extract_hog_features(image_resized)
+#     image_resized = cv2.resize(image, (128, 64))
+#     features = extract_hog_features(image_resized)
     
-    pca_transformed_features = pca.transform([features])
+#     pca_transformed_features = pca.transform([features])
     
-    prediction = knn.predict(pca_transformed_features)[0]
-    return features, prediction
+#     prediction = knn.predict(pca_transformed_features)[0]
+#     return features, prediction
 
-test_image_path = './testImages/plate_0.jpg'
-features, result = predict_image(test_image_path)
+test_plates_data, test_plates_labels = load_images_with_labels("./testImages/plates", label=1)
+test_nonplates_data, test_nonplates_labels = load_images_with_labels("./testImages/nonplates", label=0)
 
-pca_transformed_test_image = pca.transform([features])
+test_data = np.vstack((test_plates_data, test_nonplates_data))
+test_labels = np.hstack((test_plates_labels, test_nonplates_labels))
+
+test_data_2d = pca.transform(test_data)
+
+test_predictions = knn.predict(test_data_2d)
+
+accuracy = accuracy_score(test_labels, test_predictions)
+print(f"Test Accuracy: {accuracy * 100:.2f}%")
+
 
 plt.figure(figsize=(10, 8))
 
@@ -86,16 +96,9 @@ plt.contourf(xx, yy, Z, alpha=0.8, cmap=plt.cm.coolwarm)
 colors = ['blue' if label == 0 else 'red' for label in labels]
 plt.scatter(data_2d[:, 0], data_2d[:, 1], c=colors, edgecolor='k', s=50)
 
-plt.scatter(pca_transformed_test_image[0][0], pca_transformed_test_image[0][1], color='red', s=100, label="Test Image")
-
-if result == 1:
-    print("The image is a plate.")
-else:
-    print("The image is not a plate.")
 
 plt.title("KNN Decision Regions for Plates and Non-Plates")
 plt.xlabel("PCA Feature 1")
 plt.ylabel("PCA Feature 2")
 plt.colorbar()
-plt.legend()
 plt.show()

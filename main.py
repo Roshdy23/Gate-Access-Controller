@@ -30,6 +30,8 @@ if license_plate is not None:
     for i, char in enumerate(chars):
         cv2.imshow(f"Character {i}", char)
     cv2.imshow("Detected License Plate", license_plate)
+    for i in range(len(chars)):
+        cv2.imshow(f"char ${i}", chars[i])
 else:
     print("No license plate detected.")
 
