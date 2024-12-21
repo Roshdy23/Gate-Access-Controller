@@ -5,9 +5,9 @@ import joblib
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
-from HOG import HOG
+from HOG2 import HOG2
 
-hog = HOG()
+hog = HOG2()
 
 def extract_hog_features(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
