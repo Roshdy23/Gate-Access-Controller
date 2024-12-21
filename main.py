@@ -27,7 +27,8 @@ license_plate = plateDetection(preprocessed_image, original_image)
 
 if license_plate is not None:
     chars = segment_plate(license_plate)
-
+    for i, char in enumerate(chars):
+        cv2.imshow(f"Character {i}", char)
     cv2.imshow("Detected License Plate", license_plate)
 else:
     print("No license plate detected.")
