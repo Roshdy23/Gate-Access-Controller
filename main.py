@@ -4,11 +4,13 @@ import argparse
 from preProcessing import imagePreprocessing
 from plateDetection import plateDetection
 from buildDB import buildCharacterDB
+from detect_characters import GateAccessController
 from segmentPlate import segment_plate
 
 features = []
 labels = []
-
+controller = GateAccessController()
+controller.train_model()
 parser = argparse.ArgumentParser()
 parser.add_argument("index", type=int)
 args = parser.parse_args()
@@ -29,9 +31,9 @@ if license_plate is not None:
     chars = segment_plate(license_plate)
     for i, char in enumerate(chars):
         cv2.imshow(f"Character {i}", char)
+        prediction = controller.predict_plate_text(char)
+        print(f"Character {i}: {prediction}")
     cv2.imshow("Detected License Plate", license_plate)
-    for i in range(len(chars)):
-        cv2.imshow(f"char ${i}", chars[i])
 else:
     print("No license plate detected.")
 

@@ -1,0 +1,19 @@
+@staticmethod
+    def char_calculations(A, height, width):  # Define as static method
+        A_mean = A.mean()
+        col_A = 0
+        corr_A = 0
+        sum_list = np.zeros(shape=(height, width))
+        img_row = 0
+        while img_row < height:
+            img_col = 0
+            while img_col < width:
+                col_A += (A[img_row, img_col] - A_mean) ** 2
+                sum_list[img_row][img_col] = A[img_row, img_col]
+                img_col += 1
+            corr_A += col_A
+            col_A = 0
+            img_row += 1
+        return corr_A, sum_list
+
+            features.append(flattened_col_sum)
