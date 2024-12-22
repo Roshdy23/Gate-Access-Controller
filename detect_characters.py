@@ -8,7 +8,7 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
 class GateAccessController:
-    def __init__(self, dataset_path=r'C:\Users\MOSTAFA\Desktop\data', n_clusters=100):
+    def __init__(self, dataset_path=r'/home/youssef-roshdy/Public/IP/Gate Access Controller/Gate-Access-Controller/images/data-set/data', n_clusters=100):
         self.dataset_path = dataset_path
         self.model = KNeighborsClassifier(n_neighbors=10, p=2, metric='euclidean')
         self.sift = cv2.SIFT_create()  # Initialize SIFT
