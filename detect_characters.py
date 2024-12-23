@@ -3,24 +3,26 @@ import cv2
 import numpy as np
 from sklearn import svm
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
+from skimage.feature import hog
 
 class GateAccessController:
-    def __init__(self, dataset_path=r'images\new_data_set_characters\data', n_clusters=100):
+    def __init__(self, dataset_path=r'C:\Users\MOSTAFA\Desktop\data'):
         self.dataset_path = dataset_path
-        self.model = KNeighborsClassifier(n_neighbors=10, p=2, metric='euclidean')
-        self.sift = cv2.SIFT_create()  # Initialize SIFT
-        self.n_clusters = n_clusters
-        self.kmeans = None
+        self.model = svm.SVC(probability=True, random_state=42)  # Use SVM
         self.scaler = StandardScaler()
 
     charWidth = 60
     charHeight = 60
 
-    def extract_sift_descriptors(self):
-        descriptors_list = []
+    def extract_hog_features(self, img):
+        # Compute HOG features
+        features, _ = hog(img, orientations=9, pixels_per_cell=(8, 8),
+                          cells_per_block=(2, 2), block_norm='L2-Hys', visualize=True)
+        return features
+
+    def get_features_labels(self):
+        features = []
         labels = []
 
         # List all subdirectories (each is a label)
@@ -46,42 +48,11 @@ class GateAccessController:
                     # Resize the image
                     img_resized = cv2.resize(img, (60, 60))
 
-                    # Compute SIFT features
-                    keypoints, descriptors = self.sift.detectAndCompute(img_resized, None)
-                    if descriptors is not None:
-                        descriptors_list.append(descriptors)
-                        # Append the label
-                        labels.append(label)
-
-        return descriptors_list, labels
-
-    def create_bovw_model(self, descriptors_list):
-        # Stack all descriptors vertically in a numpy array
-        all_descriptors = np.vstack(descriptors_list)
-
-        # Perform k-means clustering to create the visual vocabulary
-        self.kmeans = KMeans(n_clusters=self.n_clusters, random_state=42)
-        self.kmeans.fit(all_descriptors)
-
-    def get_bovw_features(self, descriptors):
-        # Predict the cluster for each descriptor
-        words = self.kmeans.predict(descriptors)
-
-        # Create a histogram of visual words
-        histogram, _ = np.histogram(words, bins=np.arange(self.n_clusters + 1), density=True)
-
-        return histogram
-
-    def get_features_labels(self):
-        descriptors_list, labels = self.extract_sift_descriptors()
-
-        # Create the BoVW model
-        self.create_bovw_model(descriptors_list)
-
-        features = []
-        for descriptors in descriptors_list:
-            bovw_features = self.get_bovw_features(descriptors)
-            features.append(bovw_features)
+                    # Compute HOG features
+                    hog_features = self.extract_hog_features(img_resized)
+                    features.append(hog_features)
+                    # Append the label
+                    labels.append(label)
 
         # Scale the features
         features = self.scaler.fit_transform(features)
@@ -105,18 +76,13 @@ class GateAccessController:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         
         img_resized = cv2.resize(img, (60, 60)) 
-        keypoints, descriptors = self.sift.detectAndCompute(img_resized, None)
-        if descriptors is not None:
-            bovw_features = self.get_bovw_features(descriptors)
-            bovw_features = self.scaler.transform([bovw_features])
-            prediction = self.model.predict(bovw_features)[0]
-            confidence = self.model.predict_proba(bovw_features)[0].max()
-            print('Prediction:', prediction)
-            print('Confidence:', confidence)
-            return prediction, confidence
-        else:
-            print('No features detected')
-            return None, None
+        hog_features = self.extract_hog_features(img_resized)
+        hog_features = self.scaler.transform([hog_features])
+        prediction = self.model.predict(hog_features)[0]
+        confidence = self.model.predict_proba(hog_features)[0].max()
+        print('Prediction:', prediction)
+        print('Confidence:', confidence)
+        return prediction, confidence
 
 # controller = GateAccessController()
 # controller.train_model()
