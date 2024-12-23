@@ -34,7 +34,7 @@ if license_plate is not None:
         cv2.imshow(f"Character {i}", char)
         prediction = controller.predict_plate_text(char)
         print(f"Character {i}: {prediction}")
-        
+
         plateStr += prediction[0]
         if i != len(chars) - 1:
             plateStr += "-"
