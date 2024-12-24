@@ -4,7 +4,8 @@ import re
 
 arabic_regex = r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]'
 
-
+def is_arabic(char):
+    return re.match(arabic_regex, char) is not None
 def run_deep_model(path):
     image_path = path
     image = cv2.imread(image_path)
@@ -21,12 +22,35 @@ def run_deep_model(path):
         bottom_right = tuple(map(int, bbox[2]))
         cv2.rectangle(image, top_left, bottom_right, (0, 255, 0), 2)
 
+        con = True
+        for char in text:
+            if char == ' ': continue
+            if not is_arabic(char):
+                con = False
+                break
+
+        if not con: continue
+
         cnt_non_space = 0
         for char in text:
             if char == ' ': continue
             cnt_non_space += 1
         # Use regular expression to find Arabic digits
-        if (cnt_non_space > 4 or text == "مصر"): continue
+        if (text == "مصر"): continue
+
+        if(cnt_non_space > 4):
+            cnt_digit = 0
+            for i in range(len(text)):
+                if (re.search(r'[٠-٩]+', text[i])):
+                    cnt_digit += 1
+            if(cnt_digit <= 4 and cnt_non_space-cnt_digit <= 3):
+                plate_text = text
+                print(plate_text," form the one block")
+                break
+            else: continue
+
+
+
         match = True
         for i in range(len(text)):
             match = match and (re.search(r'[٠-٩]+', text[i]))
@@ -52,7 +76,7 @@ arabic_to_word = {
     "ق": "qaf", "ل": "lam", "و": "waw", "ه": "heh", "م": "meem", "ا": "alif", "ب": "beh",
     "ج": "jeem", "د": "dal", "ر": "reh", "ز": "zay", "س": "seen", "ص": "sad", "ط": "tah",
     "ف": "feh", "ع": "ain", "غ": "ghayn", "خ": "kha", "ش": "sheen", "ص": "sad", "ت": "teh",
-    "ظ": "zah", "ة": "hatah", "ي": "yeh", "ن": "noon", "ف": "feh", "ج": "jeem"
+    "ظ": "zah", "ة": "hatah", "ي": "yeh","ى": "yeh", "ن": "noon", "ف": "feh", "ج": "jeem"
 }
 
 

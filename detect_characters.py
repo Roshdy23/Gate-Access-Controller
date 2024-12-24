@@ -1,6 +1,7 @@
 import os
 import cv2
 import numpy as np
+import joblib
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -8,11 +9,14 @@ from HOG import HOG
 
 
 class GateAccessController:
-    def __init__(self, dataset_path=r'images\data-set'):
+    def __init__(self, dataset_path=r'images\data-set', model_path='rf_model.pkl'):
         self.dataset_path = dataset_path
+        self.model_path = model_path
+        self.label_encoder_path = 'label_encoder.pkl'
         self.model = RandomForestClassifier(n_estimators=100, random_state=42)  # Using Random Forest
         self.hog = HOG()
         self.label_encoder = LabelEncoder()
+        self.load_model()  # Load model if it exists
 
     def extract_hog_features(self, img):
         return self.hog.compute_hog_features(img)
@@ -69,7 +73,19 @@ class GateAccessController:
         test_accuracy = self.model.score(test_features, test_labels)
         print('Training Accuracy:', train_accuracy)
         print('Testing Accuracy:', test_accuracy)
+
+        # Save the model and encoder
+        self.save_model()
         return self.model
+
+    def save_model(self):
+        joblib.dump(self.model, self.model_path)
+        joblib.dump(self.label_encoder, self.label_encoder_path)
+
+    def load_model(self):
+        if os.path.exists(self.model_path) and os.path.exists(self.label_encoder_path):
+            self.model = joblib.load(self.model_path)
+            self.label_encoder = joblib.load(self.label_encoder_path)
 
     def predict_plate_text(self, img):
         if img is not None and len(img.shape) == 3:
@@ -81,6 +97,7 @@ class GateAccessController:
         # Reshape features for prediction
         hog_features = hog_features.reshape(1, -1)
 
+        # Predict class and confidence
         prediction_idx = self.model.predict(hog_features)[0]
         confidence = max(self.model.predict_proba(hog_features)[0])
 
@@ -91,7 +108,10 @@ class GateAccessController:
         return predicted_label, confidence
 
 
-# Example usage:
-# controller = GateAccessController()
-# controller.train_model()
-# controller.predict_plate_text(cv2.imread('images/un_used_characters/alf_1.jpg'))
+# Example usage
+controller = GateAccessController()
+
+# Train the model if it's not already trained
+if not os.path.exists('rf_model.pkl'):
+    controller.train_model()
+

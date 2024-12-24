@@ -10,6 +10,7 @@ from PIL import Image
 from deep_model import run_easy_OCR
 from main import run_OCR
 
+
 st.title("License Plate Recognition")
 
 # Step 1: Allow the user to upload an image
@@ -74,6 +75,6 @@ if uploaded_file is not None:
 
     # Step 6: Highlight the Result
     if match:
-        st.markdown('<div style="background-color:#D4EDDA; padding:10px; border-radius:5px;">✅ PASS</div>', unsafe_allow_html=True)
+        st.markdown('<div style="background-color:#00FF00; padding:10px; border-radius:5px;">✅ PASS</div>', unsafe_allow_html=True)
     else:
-        st.markdown('<div style="background-color:#F8D7DA; padding:10px; border-radius:5px;">❌ STOP</div>', unsafe_allow_html=True)
+        st.markdown('<div style="background-color:#FF0000; padding:10px; border-radius:5px;">❌ STOP</div>', unsafe_allow_html=True)
