@@ -8,7 +8,7 @@ import tempfile
 
 from PIL import Image
 from deep_model import run_easy_OCR
-from main import run_OCR
+from main_OCR import run_OCR
 
 st.title("Egyptian License Plate Recognition")
 
