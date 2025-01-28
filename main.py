@@ -26,7 +26,6 @@ def run_OCR(input_image_path):
     if license_plate is not None:
         chars = segment_plate(license_plate)
         for i, char in enumerate(chars):
-            cv2.imshow(f"Character {i}", char)
             prediction = controller.predict_plate_text(char)
             print(f"Character {i}: {prediction}")
 
