@@ -26,7 +26,9 @@ To install the required libraries:
 ### Run the Project
 
 To run the project, use the following command:
-`python -m streamlit run .\GUI.py`
+```bash 
+python -m streamlit run .\GUI.py
+```
 
 
 
