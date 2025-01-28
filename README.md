@@ -1,4 +1,4 @@
-# License Plate Detection
+# **Egyptian License Plate Recognization**
 
 This project leverages OpenCV and Python to detect license plates from images. The program processes an image to identify the license plate area using various image processing techniques.
 
@@ -8,22 +8,27 @@ This project leverages OpenCV and Python to detect license plates from images. T
 - Detection of license plates within an image.
 - Allows dynamic specification of the image to be processed using command-line arguments.
 
+
+## Dataset
+
+The dataset used for this project is publicly available in the repository:
+[Car Plates Dataset](https://github.com/Roshdy23/Gate-Access-Controller/tree/main/images)
+
+
 ## Installation
 
-To run this project, ensure that you have Python and the necessary libraries installed.
-
-### Prerequisites
-
-- Python 3.x
-- OpenCV
-- NumPy
+Please ensure you have Python and the necessary libraries installed.
+To install the required libraries:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 ### Run the Project
 
 To run the project, use the following command:
-`py main.py i `
+```bash 
+python -m streamlit run .\GUI.py
+```
 
-### Key Points:
-1. **Run Instructions**: 
-   - `py main.py i` where `i` is the index number.
-2. **Image Naming**: `platei.jpg`
+
+
