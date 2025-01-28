@@ -4,91 +4,93 @@ import re
 
 arabic_regex = r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]'
 
+arabic_to_word = {
+    "٠": "zero", "١": "one", "٢": "two", "٣": "three", "٤": "four",
+    "٥": "five", "٦": "six", "٧": "seven", "٨": "eight", "٩": "nine",
+    "ق": "kaf", "ل": "lam", "و": "waw", "ه": "heh", "م": "mem", "ا": "alf", "ب": "beh",
+    "ج": "gem", "د": "dal", "ر": "reh", "ز": "zay", "س": "sen", "ص": "sad", "ط": "tah",
+    "ف": "fih", "ع": "ein", "غ": "ghayn", "خ": "kha", "ش": "sheen", "ت": "teh",
+    "ظ": "zah", "ة": "hatah", "ي": "yeh", "ى": "yeh", "ن": "non",
+}
+
+
 def is_arabic(char):
     return re.match(arabic_regex, char) is not None
-def run_deep_model(path):
-    image_path = path
+
+
+def is_arabic_digit(char):
+    return bool(re.search(r'[٠-٩]', char))
+
+
+def preprocess_image(image_path):
+    """Load and preprocess the image."""
     image = cv2.imread(image_path)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-    reader = easyocr.Reader(['ar'])  # 'ar' for Arabic
 
-    results = reader.readtext(image)
+def check_as_one_block(text):
+    """
+       Check if the text is a valid license plate block.
+       A valid block has:
+       - At least 1 Arabic digits and At most 4.
+       - At least 1 non-digit Arabic characters and At most 3.
+       - All it's characters are either Arabic digit ,non-digit Arabic characters, or ' ' char.
+    """
+    cnt_non_digit_char = sum(1 for char in text if char != ' ' and is_arabic(char) and not is_arabic_digit(char))
+    cnt_digit = sum(1 for char in text if is_arabic_digit(char))
+    cnt_space = sum(1 for char in text if char == ' ')
+
+    if 1 <= cnt_digit <= 4 and 1 <= cnt_non_digit_char <= 3 and cnt_space >= 1:
+        return True
+    
+    return False
+
+
+def filter_arabic_text(results):
+    """Filter OCR results to extract valid Arabic text."""
+
     plate_text = ""
-    num = False
+    num_is_found = False
+
     for (bbox, text, prob) in results:
-        # Draw the bounding box
-        top_left = tuple(map(int, bbox[0]))
-        bottom_right = tuple(map(int, bbox[2]))
-        cv2.rectangle(image, top_left, bottom_right, (0, 255, 0), 2)
 
-        con = True
-        for char in text:
-            if char == ' ': continue
-            if not is_arabic(char):
-                con = False
-                break
-
-        if not con: continue
-
-        cnt_non_space = 0
-        for char in text:
-            if char == ' ': continue
-            cnt_non_space += 1
-        # Use regular expression to find Arabic digits
-        if (text == "مصر"): continue
-
-        if(cnt_non_space > 4):
-            cnt_digit = 0
-            for i in range(len(text)):
-                if (re.search(r'[٠-٩]+', text[i])):
-                    cnt_digit += 1
-            if(cnt_digit <= 4 and cnt_non_space-cnt_digit <= 3):
-                plate_text = text
-                print(plate_text," form the one block")
-                break
-            else: continue
-
-
-
-        match = True
-        for i in range(len(text)):
-            match = match and (re.search(r'[٠-٩]+', text[i]))
-        if match:
-            plate_text += text
-            num = True
+        if not all(is_arabic(char) or char == ' ' for char in text):
             continue
 
-        if (num):
-            plate_text += " " + text
+        if text == "مصر":
+            continue
+
+        if check_as_one_block(text):
+            plate_text = text[::-1]
             break
 
-    # Extract and display the detected text
-    # plate_text = ' '.join([text for (_, text, _) in results])
-    print("Detected License Plate:", plate_text)
+        if len(text) > 4:
+            continue
+
+        if all(is_arabic_digit(char) for char in text):
+            plate_text += text
+            num_is_found = True
+            continue
+
+        if num_is_found:
+            plate_text += " " + text[::-1]
+            break
 
     return plate_text
 
 
-arabic_to_word = {
-    "٠": "zero", "١": "one", "٢": "two", "٣": "three", "٤": "four",
-    "٥": "five", "٦": "six", "٧": "seven", "٨": "eight", "٩": "nine",
-    "ق": "qaf", "ل": "lam", "و": "waw", "ه": "heh", "م": "meem", "ا": "alif", "ب": "beh",
-    "ج": "jeem", "د": "dal", "ر": "reh", "ز": "zay", "س": "seen", "ص": "sad", "ط": "tah",
-    "ف": "feh", "ع": "ain", "غ": "ghayn", "خ": "kha", "ش": "sheen", "ص": "sad", "ت": "teh",
-    "ظ": "zah", "ة": "hatah", "ي": "yeh","ى": "yeh", "ن": "noon", "ف": "feh", "ج": "jeem"
-}
+def run_deep_model(image_path):
+
+    image = preprocess_image(image_path)
+    reader = easyocr.Reader(['ar'])
+    results = reader.readtext(image)
+    plate_text = filter_arabic_text(results)
+
+    return plate_text
 
 
 def map_output_to_plate_format(output_text):
-    formatted_text = []
-
-    for char in output_text:
-        if (not char in arabic_to_word): continue
-        formatted_text.append(arabic_to_word[char])
-
-    # Return the space-separated string
-    return '-'.join(formatted_text)
+    return '-'.join([arabic_to_word[char] for char in output_text if char in arabic_to_word])
 
 
 def run_easy_OCR(image_path):

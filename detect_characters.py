@@ -82,7 +82,7 @@ class GateAccessController:
         joblib.dump(self.model, self.model_path)
         joblib.dump(self.label_encoder, self.label_encoder_path)
 
-    def load_model(self):
+    def  load_model(self):
         if os.path.exists(self.model_path) and os.path.exists(self.label_encoder_path):
             self.model = joblib.load(self.model_path)
             self.label_encoder = joblib.load(self.label_encoder_path)
